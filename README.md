@@ -18,7 +18,7 @@ Drop-in for Next.js + Prisma + Stripe.
 
 [Quick start](#quick-start-60-seconds) · [Install it in your app](#install-it-in-your-app) ·
 [Configuration](#configuration) · [Abuse](#abuse-and-why-this-design-resists-it) ·
-[In production](#in-production-on-asteriasapp)
+[In production](#in-production-on-wwwasteriasapp)
 
 </div>
 
@@ -63,19 +63,19 @@ flowchart LR
 
 ---
 
-## In production on asterias.app
+## In production on www.asterias.app
 
 This is not a weekend abstraction. It runs the referral program of
-**[Asterias](https://asterias.app)**, a paid SaaS.
+**[Asterias](https://www.asterias.app)**, a paid SaaS.
 
-> **[Asterias](https://asterias.app)** answers the Google reviews of local businesses,
+> **[Asterias](https://www.asterias.app)** answers the Google reviews of local businesses,
 > automatically. It reads new reviews as they land, writes a reply in the owner's own
 > tone and in the reviewer's language, and publishes it. Anything sensitive, a one or
 > two star review, a complaint about hygiene or safety, is held back and sent to the
 > owner on Telegram or WhatsApp for a yes or no before it goes anywhere near the
 > public listing. It is sold in France, the United Kingdom, Germany, Italy and Spain.
 >
-> **[See the product →](https://asterias.app)** · [Pricing](https://asterias.app/en/#pricing) · [How it works](https://asterias.app/en)
+> **[See the product →](https://www.asterias.app)** · [Pricing](https://www.asterias.app/en/#pricing) · [How it works](https://www.asterias.app/en)
 
 The version extracted here is not a copy of that code. It is a rewrite that fixes two
 real defects found while extracting it, both documented below in
@@ -582,4 +582,4 @@ about that.
 
 MIT. See [LICENSE](LICENSE).
 
-If you ship it, [say hello](https://asterias.app) — I would like to know it was useful.
+If you ship it, [say hello](https://www.asterias.app) — I would like to know it was useful.
