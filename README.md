@@ -1,6 +1,6 @@
 <div align="center">
 
-# nextjs-stripe-referrals
+# nextjs-stripe-referrals V1.0
 
 **A referral program that pays out only when the referral actually pays.**
 
