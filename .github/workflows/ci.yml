@@ -9,20 +9,25 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # v7 across the board: these run on node24. The older majors run on
+      # node20, which GitHub has deprecated on its runners.
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
+      # No `version` here on purpose. This action reads the `packageManager`
+      # field of package.json, so naming a version in both places is not
+      # redundancy, it is two sources of truth: the action refuses to start
+      # with "Multiple versions of pnpm specified" the moment they drift.
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
 
-      # The client has to exist before tsc can see @prisma/client's types.
+      # The generated client has to exist before tsc can see the types that
+      # `@prisma/client` only has once it has been generated.
       - run: pnpm prisma generate
 
       - run: pnpm typecheck
