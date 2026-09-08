@@ -1,0 +1,22 @@
+# Postgres only. The app runs on your machine with `pnpm dev` — there is no
+# image to build here, because what this repository ships is a folder you copy
+# into your own app, not a service you deploy.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: referrals
+      POSTGRES_PASSWORD: referrals
+      POSTGRES_DB: referrals
+    ports:
+      - '5433:5432'
+    volumes:
+      - referrals-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U referrals']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  referrals-data:

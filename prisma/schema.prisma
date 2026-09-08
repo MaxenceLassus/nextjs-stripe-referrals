@@ -1,0 +1,178 @@
+// ---------------------------------------------------------------------------
+// Referral program schema.
+//
+// Everything below the `User` model belongs to `src/referrals/` and is what you
+// copy into your own schema. Note what is NOT here: no foreign key from any of
+// these tables to your users table.
+//
+// That is deliberate, and it is the single decision that makes this folder
+// droppable into an app whose schema nobody here has seen. A foreign key would
+// mean editing your `User` model to add back-relations, which means the module
+// stops being a folder you copy and becomes a migration you merge. `userId` is
+// therefore an opaque string: whatever your app calls an account id.
+//
+// The cost is that nothing cascades when you delete an account, so the module
+// exposes `forgetUser(userId)` for you to call from your own deletion path, and
+// every read tolerates rows whose user no longer exists. If you would rather
+// have the database enforce it, add the relations yourself — the queries do not
+// care either way.
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// DEMO ONLY. Your app already has something like this; the referral module
+/// never reads it. It is here so `pnpm dev` gives you accounts to click
+/// through the flow with.
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  locale    String   @default("en")
+  createdAt DateTime @default(now())
+
+  @@map("demo_users")
+}
+
+// ---------------------------------------------------------------------------
+// The module's own tables
+// ---------------------------------------------------------------------------
+
+/// An account's code to hand out, e.g. `SARAH-9F3K`.
+///
+/// Its own table rather than a column on your users table, again so that
+/// installing this changes nothing you already own. Minted lazily on the first
+/// visit to the referral page: most accounts never open it, and a code nobody
+/// was ever told about is not worth writing. Immutable once set, because it is
+/// the stable half of a link people have already shared.
+model ReferralCode {
+  id     String @id @default(cuid())
+  userId String @unique
+  code   String @unique
+
+  createdAt DateTime @default(now())
+
+  @@map("referral_codes")
+}
+
+/// Who invited whom. One row per referred account, written once at signup and
+/// never edited.
+///
+/// `referredUserId` is unique: an account is referred by exactly one person,
+/// forever. Without that, a second signup path could hand the same account to a
+/// second referrer and both would be paid for it.
+model Referral {
+  id String @id @default(cuid())
+
+  referrerUserId String
+  referredUserId String @unique
+
+  /// What the referrer sees in their list. A snapshot taken when the referral
+  /// was attached, not a live join — the module has no relation to your users
+  /// table to join through (see the header).
+  ///
+  /// Whatever you put here is shown to the referrer, so do not put a raw email
+  /// in it: your referrer knows who they invited, and does not need that
+  /// account's address handed back to them by a page. `maskEmail()` in
+  /// `referrals/labels.ts` is the safe default.
+  referredLabel String?
+
+  createdAt DateTime @default(now())
+
+  @@index([referrerUserId])
+  @@map("referrals")
+}
+
+/// What Stripe says about one account's subscription.
+///
+/// A mirror, not a second opinion: every field here is written from a fresh
+/// read of the Stripe API and nothing computes anything from it that Stripe
+/// would not agree with. It exists so counting active referrals is one indexed
+/// query instead of N API calls, and so the webhook has somewhere to record
+/// what it saw.
+///
+/// `appliedPercent` is the exception worth understanding. It is not a stored
+/// entitlement — the discount an account has *earned* is always recomputed from
+/// the referral rows. It is the record of what this app last told Stripe, so
+/// that a sync can skip the write when nothing changed, and so the reconciler
+/// has something to compare the computed tier against. A cache of remote state,
+/// not a rule.
+model ReferralCustomer {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String?
+
+  status ReferralSubscriptionStatus @default(NONE)
+
+  /// Stripe's own status string, kept verbatim. `status` above is our reading
+  /// of it; when the two disagree in a bug report, this is what settles it.
+  stripeStatus String?
+
+  currentPeriodEnd  DateTime?
+  cancelAtPeriodEnd Boolean   @default(false)
+
+  /// Percent off last written to this subscription, 0 for none.
+  appliedPercent Int @default(0)
+
+  /// When the Stripe read behind these fields was taken. Two webhooks handled
+  /// concurrently both re-read the API; this is what stops the one that read
+  /// earlier from overwriting the one that read later.
+  syncedAt DateTime @default(now())
+
+  /// Last failure to write the discount to Stripe, cleared on the next
+  /// success. The reconciler reports on these rather than letting a silent
+  /// catch swallow them.
+  lastSyncError String?
+
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("referral_customers")
+}
+
+/// Our reading of a Stripe subscription status.
+///
+/// Only `ACTIVE` earns a referrer anything (and `TRIALING` too, if you set
+/// REFERRAL_COUNT_TRIALING — read the README's abuse section before you do).
+/// Everything else, payment failure included, counts as nothing, which is what
+/// makes "the discount goes away at the first missed payment" true.
+enum ReferralSubscriptionStatus {
+  /// Paying.
+  ACTIVE
+  /// Inside a free trial: committed nothing yet.
+  TRIALING
+  /// A renewal failed and Stripe is retrying, or has given up (`unpaid`).
+  PAST_DUE
+  /// Ended, whether by the customer or by Stripe.
+  CANCELED
+  /// Deliberately paused by the merchant.
+  PAUSED
+  /// Started and never completed — an abandoned or failed first payment.
+  INCOMPLETE
+  /// No subscription at all: a free plan, or an account that never subscribed.
+  NONE
+}
+
+/// Every Stripe event id this app has handled.
+///
+/// Stripe redelivers on any non-2xx and on its own retry schedule, so without
+/// this a single delivery hiccup replays a discount change. The primary key is
+/// the gate: a concurrent redelivery loses the insert race and is dropped
+/// rather than handled twice.
+model ProcessedStripeEvent {
+  id   String @id
+  type String
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("processed_stripe_events")
+}

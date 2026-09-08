@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The client has to exist before tsc can see @prisma/client's types.
+      - run: pnpm prisma generate
+
+      - run: pnpm typecheck
+
+      # No database and no network: the suite is pure logic plus a local
+      # recorder standing in for the Stripe API.
+      - run: pnpm test

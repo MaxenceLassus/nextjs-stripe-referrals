@@ -1,0 +1,23 @@
+# Secrets. Only .env.example is ever committed, and it holds placeholders.
+.env
+.env.*
+!.env.example
+
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# Prisma generates the client into node_modules; nothing to commit.
+prisma/*.db
+prisma/*.db-journal
+
+# TypeScript incremental build cache
+*.tsbuildinfo

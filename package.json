@@ -1,0 +1,43 @@
+{
+  "name": "nextjs-stripe-referrals",
+  "version": "1.0.0",
+  "private": false,
+  "license": "MIT",
+  "description": "Drop-in referral program for Next.js + Prisma + Stripe: every referral who pays takes a percentage off the referrer's own subscription, removed the moment they stop paying.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx scripts/seed.ts",
+    "referrals:reconcile": "tsx scripts/reconcile.ts",
+    "referrals:doctor": "tsx scripts/doctor.ts",
+    "referrals:verify-flow": "tsx scripts/verify-flow.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.7.0",
+    "next": "^15.3.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "stripe": "^18.1.0",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.17",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.5",
+    "autoprefixer": "^10.4.21",
+    "dotenv": "^16.5.0",
+    "postcss": "^8.5.3",
+    "prisma": "^6.7.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.3"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
